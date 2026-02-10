@@ -9,7 +9,7 @@
 
 ```bash
 git clone https://github.com/sohelsheikh05/UrbanFur-backend.git
-cd Backend
+cd UrbanFur-backend/Backend
 ```
 
 ---
