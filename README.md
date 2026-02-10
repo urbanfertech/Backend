@@ -26,7 +26,7 @@ npm install
 
 1. Create a `.env` file in the project root.
 2. Copy contents from `.env.example`.
-3. Paste the shared credentials provided by the maintainer.
+3. Paste the shared credentials provided by the maintainer/Add Credentials of your own.
 
 ```bash
 cp .env.example .env
