@@ -55,7 +55,7 @@ npx prisma db push
 ### Step 5: Run the application
 
 ```bash
-npm run dev
+npm start
 ```
 
 
