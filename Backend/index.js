@@ -3,11 +3,11 @@ import express from "express";
 import "dotenv/config";
 import prismaPkg from "@prisma/client";
 import userroutes from "./routes/user.routes.js";
-const { PrismaClient } = prismaPkg;
-const prisma = new PrismaClient();
+import passport from "./lib/passport.js";
+
 
 const app = express();
-
+app.use(passport.initialize());
 app.use(express.json());
 app.use("/accounts",userroutes);
 app.get("/test", async (req, res) => {

@@ -11,24 +11,27 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+ 
 }
         
 
 model User {
   id            String   @id @default(uuid()) @db.Uuid
+  googleId      String?  @unique    
   name          String
   email         String   @unique
-  password      String?  @default("") 
+  password      String?
   role          String   @default("user")
-  phone         String?  @default("")
-  city          String?  @default("")
-  pincode       String?  @default("")
-  latitude      Decimal? @default(0.0) @db.Decimal(9, 6)
-  longitude     Decimal? @default(0.0) @db.Decimal(9, 6)
+  phone         String?
+  city          String?
+  pincode       String?
+  latitude      Decimal? @db.Decimal(9, 6)
+  longitude     Decimal? @db.Decimal(9, 6)
+  photo         String?             
   created_at    DateTime @default(now())
 
   @@map("users")
 }
+
+
 
