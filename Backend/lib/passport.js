@@ -14,7 +14,7 @@ passport.use(
       callbackURL: "http://localhost:3000/accounts/google/callback",
       passReqToCallback: true, 
     },
-    async (req,accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails[0].value;
         

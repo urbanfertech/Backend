@@ -10,9 +10,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
- 
+  provider = "postgresql"
 }
+
         
 
 model User {
@@ -29,8 +29,272 @@ model User {
   longitude     Decimal? @db.Decimal(9, 6)
   photo         String?             
   created_at    DateTime @default(now())
+  
+  groomer       Groomer?
+  bookings      Booking[]
+  reviews       Review[]
+  complaints    Complaint[]
 
   @@map("users")
+}
+
+model Groomer {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  isVerified        Boolean  @default(false)
+  verificationStatus String  @default("pending") // pending, approved, rejected
+  bio               String?
+  yearsOfExperience Int?
+  rating            Decimal? @db.Decimal(3, 2)
+  totalReviews      Int      @default(0)
+  
+  documents         GroomerDocument[]
+  services          GroomerService[]
+  availability      Availability[]
+  bookings          Booking[]
+  wallet            GroomerWallet?
+  payouts           Payout[]
+  reviews           Review[]
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("groomers")
+}
+
+model GroomerDocument {
+  id                String   @id @default(uuid()) @db.Uuid
+  groomerId         String   @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  documentType      String   // pancard, aadhar, license, certificate, etc
+  documentUrl       String
+  verificationStatus String  @default("pending") // pending, approved, rejected
+  verificationNotes String?
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("groomer_documents")
+}
+
+model Service {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String
+  description       String?
+  duration          Int      // duration in minutes
+  isActive          Boolean  @default(true)
+  
+  groomerServices   GroomerService[]
+  invoiceItems      InvoiceItem[]
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("services")
+}
+
+model GroomerService {
+  id                String   @id @default(uuid()) @db.Uuid
+  groomerId         String   @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  serviceId         String   @db.Uuid
+  service           Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  customPrice       Decimal? @db.Decimal(10, 2)
+  customDuration    Int?     // duration in minutes
+  isActive          Boolean  @default(true)
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  
+  @@unique([groomerId, serviceId])
+  @@map("groomer_services")
+}
+
+model Availability {
+  id                String   @id @default(uuid()) @db.Uuid
+  groomerId         String   @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek         Int      // 0 = Sunday, 6 = Saturday
+  startTime         String   // HH:MM format
+  endTime           String   // HH:MM format
+  isAvailable       Boolean  @default(true)
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("availability")
+}
+
+model Booking {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  groomerId         String   @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  bookingDate       DateTime
+  status            String   @default("pending") // pending, confirmed, completed, cancelled
+  totalAmount       Decimal  @db.Decimal(10, 2)
+  
+  invoice           Invoice?
+  groomingProof     GroomingProof?
+  complaints        Complaint[]
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+model GroomingProof {
+  id                String   @id @default(uuid()) @db.Uuid
+  bookingId         String   @unique @db.Uuid
+  booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  beforeImage       String
+  afterImage        String
+  sellerUrl         String?
+  verificationStatus String  @default("pending") // pending, approved, rejected
+  adminComment      String?
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("grooming_proofs")
+}
+
+model Review {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  groomerId         String   @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  rating            Int      // 1-5
+  comment           String?
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model Complaint {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bookingId         String   @db.Uuid
+  booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  reason            String
+  description       String
+  status            String   @default("open") // open, in_review, resolved, rejected
+  adminResponse     String?
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("complaints")
+}
+
+model Invoice {
+  id                String   @id @default(uuid()) @db.Uuid
+  bookingId         String   @unique @db.Uuid
+  booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  subtotal          Decimal  @db.Decimal(10, 2)
+  platformFee       Decimal  @db.Decimal(10, 2)
+  tax               Decimal  @db.Decimal(10, 2)
+  totalAmount       Decimal  @db.Decimal(10, 2)
+  status            String   @default("pending") // pending, paid, cancelled
+  
+  items             InvoiceItem[]
+  addonCharges      AddonCharge[]
+  payment           Payment?
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id                String   @id @default(uuid()) @db.Uuid
+  invoiceId         String   @db.Uuid
+  invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  serviceId         String   @db.Uuid
+  service           Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  quantity          Int      @default(1)
+  price             Decimal  @db.Decimal(10, 2)
+
+  @@map("invoice_items")
+}
+
+model AddonCharge {
+  id                String   @id @default(uuid()) @db.Uuid
+  invoiceId         String   @db.Uuid
+  invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  description       String
+  amount            Decimal  @db.Decimal(10, 2)
+
+  @@map("addon_charges")
+}
+
+model Payment {
+  id                String   @id @default(uuid()) @db.Uuid
+  invoiceId         String   @unique @db.Uuid
+  invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  paymentGateway    String   // razorpay, stripe
+  transactionId     String   @unique
+  status            String   @default("pending") // pending, completed, failed, refunded
+  amount            Decimal  @db.Decimal(10, 2)
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("payments")
+}
+
+model GroomerWallet {
+  id                String   @id @default(uuid()) @db.Uuid
+  groomerId         String   @unique @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  balance           Decimal  @default(0) @db.Decimal(10, 2)
+  totalEarnings     Decimal  @default(0) @db.Decimal(10, 2)
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("groomer_wallets")
+}
+
+model Payout {
+  id                String   @id @default(uuid()) @db.Uuid
+  groomerId         String   @db.Uuid
+  groomer           Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  
+  amount            Decimal  @db.Decimal(10, 2)
+  status            String   @default("pending") // pending, processing, completed, failed
+  bankAccount       String?
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("payouts")
 }
 
 
