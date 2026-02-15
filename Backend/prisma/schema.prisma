@@ -13,6 +13,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  GROOMER
+  ADMIN
+}
+
         
 
 model User {
@@ -21,7 +27,7 @@ model User {
   name          String
   email         String   @unique
   password      String?
-  role          String   @default("user")
+  role          Role   @default(USER)
   phone         String?
   city          String?
   pincode       String?
@@ -48,7 +54,7 @@ model Groomer {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   isVerified        Boolean  @default(false)
-  verificationStatus String  @default("pending") // pending, approved, rejected
+  verificationStatus String  @default("pending") //pending, approved, rejected
   bio               String?
   yearsOfExperience Int?
   rating            Decimal? @db.Decimal(3, 2)

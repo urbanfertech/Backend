@@ -2,36 +2,116 @@ import prisma from "../lib/prisma.js";
 import bcrypt from "bcrypt";
 import passport from "../lib/passport.js";
 import { generateToken } from "../lib/generatetoken.js";
+
+
 export const signup = async (req, res) => {
   try {
-    const { password, ...rest } = req.body;
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        email: req.body.email,
-      },
-    })
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+    const {
+      name,
+      email,
+      password,
+      role,
+      phone,
+      city,
+      pincode,
+      latitude,
+      longitude,
+      photo
+    } = req.body;
+
+    // 🔹 Required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email and password are required"
+      });
     }
-    const user = await prisma.user.create({
-      data: {
-        ...rest,
-        password: password
-          ? await bcrypt.hash(password, 10)
-          : null,
-        role: "user",
-      },
+
+    // 🔹 Validate role safely
+    const finalRole =
+      role === "GROOMER" ? "GROOMER" : "USER";
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
     });
-    const token = generateToken(user);
-    res.status(201).json({
-      message: "User created successfully",
-      data: user,
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists"
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+      const newUser = await prisma.$transaction(async (tx) => {
+
+        const createdUser = await tx.user.create({
+          data: {
+            name,
+            email,
+            password: hashedPassword,
+            role: finalRole,
+            phone,
+            city,
+            pincode,
+            latitude,
+            longitude,
+            photo
+          }
+        });
+
+      const allowedRoles = ["USER", "GROOMER","ADMIN"];
+
+        if (role && !allowedRoles.includes(role)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid role provided"
+          });
+        }
+
+        if (finalRole === "GROOMER") {
+          await tx.groomer.create({
+            data: {
+              userId: createdUser.id,
+              isVerified: false,
+              verificationStatus: "pending",
+              rating: 0,
+              totalReviews: 0
+            }
+          });
+        }
+        return createdUser;
+        
+      });
+      const token =generateToken(newUser);
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully",
       token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        photo: newUser.photo,
+        phone: newUser.phone,
+        city: newUser.city,
+        pincode: newUser.pincode,
+        latitude: newUser.latitude,
+        longitude: newUser.longitude,
+        role: newUser.role
+      }
     });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
   }
 };
+
 export const login = async(req, res) => {
   const data=req.body;
 //   console.log(data);
