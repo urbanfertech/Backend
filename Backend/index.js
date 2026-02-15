@@ -2,16 +2,19 @@
 import express from "express";
 import "dotenv/config";
 import prismaPkg from "@prisma/client";
-import userroutes from "./routes/user.routes.js";
-import groomerRoutes from "./routes/groomer.routes.js";
 import passport from "./lib/passport.js";
-
+import authRoutes from "./routes/auth.routes.js";
+import groomerRoutes from "./routes/groomer.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import petRoutes from "./routes/pet.routes.js";
 
 const app = express();
 app.use(passport.initialize());
 app.use(express.json());
-app.use("/accounts",userroutes);
+app.use("/accounts",authRoutes);
 app.use("/groomers", groomerRoutes);
+app.use("/users", userRoutes);
+app.use("/user/pets",petRoutes);
 app.get("/test", async (req, res) => {
   const user = await prisma.user.create({
     data: { name: "Sohel" }

@@ -1,14 +1,11 @@
 import { Router } from "express";
-import { signup,login,googleLogin,googleCallback,setPassword } from "../controllers/accounts.controller.js";
-const router = Router();
 import { verifyToken } from "../middlewares/verifytoken.js";
-
-router.post("/signup",signup);
-router.post("/login",login);
-router.get("/google", googleLogin);
-router.get("/google/callback", googleCallback);
+import { setPassword, getProfile, updateProfile, deleteProfile } from "../controllers/user.controller.js";
+const router = Router();
 
 router.post("/set-password", verifyToken, setPassword);
-
+router.get("/get-profile", verifyToken, getProfile);
+router.put("/update-profile", verifyToken, updateProfile);
+router.delete("/delete-profile", verifyToken, deleteProfile);
 
 export default router;

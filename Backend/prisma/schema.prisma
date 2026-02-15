@@ -37,6 +37,7 @@ model User {
   pets        Pet[]
   posts       Post[]
   comments    Comment[]
+  postVotes     PostVote[] 
 
   @@map("users")
 }
@@ -333,9 +334,69 @@ model Pet {
   photo         String?
 
   bookings      Booking[]
-
+  isDeleted Boolean @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-
+  @@unique([userId, name, species])
+  
   @@map("pets")
+}
+
+model Post {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  content     String
+  slug        String    @unique
+  image       String?   // optional cover image
+
+  isPublished Boolean   @default(true)
+
+  comments    Comment[]
+  votes       PostVote[]
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  @@map("posts")
+}
+
+
+model Comment {
+  id              String     @id @default(uuid()) @db.Uuid
+  postId          String     @db.Uuid
+  post            Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId          String     @db.Uuid
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parentCommentId String?    @db.Uuid
+  parent          Comment?   @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]  @relation("CommentReplies")
+
+  content         String
+  isEdited        Boolean    @default(false)
+
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  @@map("comments")
+}
+
+model PostVote {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  voteType  String   // "upvote" or "downvote"
+
+  created_at DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@map("post_votes")
 }

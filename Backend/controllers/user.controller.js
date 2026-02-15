@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-
+import bcrypt from "bcrypt";
 
 
 export const getProfile = async (req, res) => {
@@ -43,8 +43,9 @@ export const updateProfile = async (req, res) => {
     "longitude",
     "photo"
   ];
-
-  const updateData = {};
+  if(!req.body)
+    return res.status(400).json({ message: "No data provided" });
+  const updateData = req.body;
 
   allowedFields.forEach((field) => {
     if (req.body[field] !== undefined) {
@@ -70,4 +71,39 @@ export const updateProfile = async (req, res) => {
   });
 
   res.json(updatedUser);
+};
+
+
+export const deleteProfile = async (req, res) => {
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: { isDeleted: true }
+  });
+
+  res.json({ message: "Account deactivated successfully" });
+};
+
+
+export const setPassword = async (req, res) => {
+  try {
+      if(!req.body)
+    return res.status(400).json({ message: "No data provided" });
+    const { password } = req.body;
+    
+    if (!password) {
+      return res.status(400).json({ message: "Password required" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword },
+    });
+
+    return res.json({ message: "Password set successfully" });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };

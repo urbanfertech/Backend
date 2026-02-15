@@ -75,24 +75,3 @@ export const googleCallback = [
 
 
 
-export const setPassword = async (req, res) => {
-  try {
-    const { password } = req.body;
-
-    if (!password) {
-      return res.status(400).json({ message: "Password required" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { password: hashedPassword },
-    });
-
-    return res.json({ message: "Password set successfully" });
-
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
