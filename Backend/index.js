@@ -8,7 +8,7 @@ import groomerRoutes from "./routes/groomer.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import petRoutes from "./routes/pet.routes.js";
 import searchRoutes from "./routes/search.routes.js";
-
+import serviceRoutes from "./routes/service.routes.js";
 const app = express();
 app.use(passport.initialize());
 app.use(express.json());
@@ -17,6 +17,7 @@ app.use("/groomers", groomerRoutes);
 app.use("/users", userRoutes);
 app.use("/user/pets",petRoutes);
 app.use("/search", searchRoutes);
+app.use("/services", serviceRoutes);
 app.get("/test", async (req, res) => {
   const user = await prisma.user.create({
     data: { name: "Sohel" }

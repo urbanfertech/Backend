@@ -28,8 +28,7 @@ export const signup = async (req, res) => {
     }
 
     // 🔹 Validate role safely
-    const finalRole =
-      role === "GROOMER" ? "GROOMER" : "USER";
+    
 
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -51,7 +50,7 @@ export const signup = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: finalRole,
+            role,
             phone,
             city,
             pincode,
@@ -70,7 +69,7 @@ export const signup = async (req, res) => {
           });
         }
 
-        if (finalRole === "GROOMER") {
+        if (role === "GROOMER") {
           await tx.groomer.create({
             data: {
               userId: createdUser.id,
@@ -127,7 +126,9 @@ export const login = async(req, res) => {
   if(!isPasswordCorrect && data.password && user.password)
     return res.status(401).json({message:"Password is incorrect"})
   const token=generateToken(user);
-  res.status(200).json({data:user,message:"User logged in successfully",token});
+  delete user.password;
+     delete user.googleId;
+  res.status(200).json({success:true,data:user,message:"User logged in successfully",token});
 }
 
 export const googleLogin = (req, res, next) => {
@@ -144,8 +145,11 @@ export const googleCallback = [
   passport.authenticate("google", { session: false }),
   (req, res) => {
     const { user, token } = req.user;
-
+    delete user.password;
+     delete user.googleId;
+     
     return res.json({
+      success: true,
       message: "Login Successful",
       user,
       token,

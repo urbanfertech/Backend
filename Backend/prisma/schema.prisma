@@ -19,6 +19,12 @@ enum Role {
   ADMIN
 }
 
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
         
 
 model User {
@@ -99,7 +105,8 @@ model Service {
   
   groomerServices   GroomerService[]
   invoiceItems      InvoiceItem[]
-  
+  bookingServices BookingService[]
+
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
@@ -142,28 +149,33 @@ model Availability {
 }
 
 model Booking {
-  id            String   @id @default(uuid()) @db.Uuid
+  id              String        @id @default(uuid()) @db.Uuid
   
-  userId        String   @db.Uuid
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String        @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  groomerId     String   @db.Uuid
-  groomer       Groomer  @relation(fields: [groomerId], references: [id], onDelete: Cascade)
+  groomerId       String        @db.Uuid
+  groomer         Groomer       @relation(fields: [groomerId], references: [id], onDelete: Cascade)
 
-  petId         String   @db.Uuid
-  pet           Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
-
-  bookingDate   DateTime
-  status        String   @default("pending") // pending, confirmed, completed, cancelled
-  totalAmount   Decimal  @db.Decimal(10, 2)
-
-  invoice       Invoice?
+  petId           String        @db.Uuid
+  pet             Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
   groomingProof GroomingProof?
-  complaints    Complaint[]
+  bookingDate     DateTime
+  status          BookingStatus @default(PENDING)
 
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  totalAmount     Decimal       @db.Decimal(10,2)
 
+  bookingServices BookingService[]
+
+  invoice         Invoice?
+  complaints Complaint[]
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([groomerId])
+  @@index([status])
+  @@index([bookingDate])
   @@map("bookings")
 }
 
@@ -405,4 +417,22 @@ model PostVote {
 
   @@unique([postId, userId])
   @@map("post_votes")
+}
+
+model BookingService {
+  id         String   @id @default(uuid()) @db.Uuid
+
+  bookingId  String   @db.Uuid
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  serviceId  String   @db.Uuid
+  service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  priceAtBooking Decimal @db.Decimal(10,2)
+
+  created_at DateTime @default(now())
+
+  @@index([serviceId])
+  @@index([bookingId])
+  @@map("booking_services")
 }
