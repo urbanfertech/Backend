@@ -6,6 +6,7 @@ import { generateToken } from "../lib/generatetoken.js";
 
 export const signup = async (req, res) => {
   try {
+    if(!req.body) return res.status(400).json({ message: "No data provided" });
     const {
       name,
       email,
@@ -112,6 +113,7 @@ export const signup = async (req, res) => {
 };
 
 export const login = async(req, res) => {
+  if(!req.body) return res.status(400).json({ message: "No data provided" });
   const data=req.body;
 //   console.log(data);
   const user =await  prisma.user.findUnique({

@@ -4,7 +4,10 @@ import prisma from "../lib/prisma.js";
 export const createBooking = async (req, res) => {
   try {
     const userId = req.user.id;
-    if(!req.body) return res.status(400).json({ message: "No data provided" });
+
+    if (!req.body)
+      return res.status(400).json({ message: "No data provided" });
+
     const { groomerId, petId, bookingDate, serviceIds } = req.body;
 
     if (!groomerId || !petId || !bookingDate || !serviceIds?.length) {
@@ -23,6 +26,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    // ✅ Check pet belongs to user
     const pet = await prisma.pet.findFirst({
       where: { id: petId, userId }
     });
@@ -34,7 +38,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-   
+    // ✅ Check groomer verified
     const groomer = await prisma.groomer.findFirst({
       where: { id: groomerId, isVerified: true }
     });
@@ -46,7 +50,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-
+    // ✅ Check availability (day-level)
     const bookingDay = selectedDate.getDay();
 
     const availability = await prisma.availability.findFirst({
@@ -64,27 +68,15 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        groomerId,
-        bookingDate: selectedDate,
-        status: { in: ["PENDING", "CONFIRMED"] }
-      }
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({
-        success: false,
-        message: "Time slot already booked"
-      });
-    }
-
-    
+    // ✅ Fetch groomer services WITH service duration
     const groomerServices = await prisma.groomerService.findMany({
       where: {
         groomerId,
         serviceId: { in: serviceIds },
         isActive: true
+      },
+      include: {
+        service: true
       }
     });
 
@@ -95,16 +87,65 @@ export const createBooking = async (req, res) => {
       });
     }
 
-
+    // ✅ Calculate total amount + total duration properly
     let totalAmount = 0;
     let totalDuration = 0;
 
     groomerServices.forEach(gs => {
       totalAmount += Number(gs.customPrice || 0);
-      totalDuration += gs.customDuration || 0;
+
+      // Use custom duration if exists, else default service duration
+      totalDuration += gs.customDuration || gs.service.duration;
     });
 
-   
+    // ✅ Calculate dynamic end time (NOT stored in DB)
+    const newStart = selectedDate;
+    const newEnd = new Date(
+      newStart.getTime() + totalDuration * 60000
+    );
+
+    // ✅ Fetch existing active bookings
+    const existingBookings = await prisma.booking.findMany({
+      where: {
+        groomerId,
+        status: { in: [ "CONFIRMED"] }
+      },
+      include: {
+        bookingServices: {
+          include: {
+            service: true
+          }
+        }
+      }
+    });
+
+    // ✅ Proper Overlap Check
+    for (const booking of existingBookings) {
+
+      let existingDuration = 0;
+
+      booking.bookingServices.forEach(bs => {
+        existingDuration += bs.service.duration;
+      });
+
+      const existingStart = new Date(booking.bookingDate);
+      const existingEnd = new Date(
+        existingStart.getTime() + existingDuration * 60000
+      );
+
+      const overlap =
+        existingStart < newEnd &&
+        existingEnd > newStart;
+
+      if (overlap) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected time overlaps with another booking"
+        });
+      }
+    }
+
+    // 🔥 TRANSACTION
     const result = await prisma.$transaction(async (tx) => {
 
       const booking = await tx.booking.create({
@@ -125,7 +166,6 @@ export const createBooking = async (req, res) => {
         }))
       });
 
-   
       const tax = totalAmount * 0.18;
       const platformFee = 50;
       const finalAmount = totalAmount + tax + platformFee;
@@ -141,7 +181,6 @@ export const createBooking = async (req, res) => {
         }
       });
 
-  
       await tx.invoiceItem.createMany({
         data: groomerServices.map(gs => ({
           invoiceId: invoice.id,
