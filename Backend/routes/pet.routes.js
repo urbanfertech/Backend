@@ -4,10 +4,10 @@ import { AddPet, getPets, updatePet, getPet,deletePet } from "../controllers/pet
 import { allowRoles } from "../middlewares/allowedroles.js";
 const router = Router();
 // router.use(allowRoles("USER"));
-router.post("/addpets", verifyToken, AddPet);
-router.get("/getpets", verifyToken, getPets);
-router.get("/getpet/:petId", verifyToken, getPet);
-router.put("/update-pet/:petId", verifyToken, updatePet);
-router.delete("/delete-pet/:petId", verifyToken, deletePet);
+router.post("/addpets", verifyToken, allowRoles("USER"),AddPet);
+router.get("/getpets", verifyToken, allowRoles("USER"),getPets);
+router.get("/getpet/:petId", verifyToken, allowRoles("USER"),getPet);
+router.put("/update-pet/:petId", verifyToken, allowRoles("USER"),updatePet);
+router.delete("/delete-pet/:petId", verifyToken, allowRoles("USER"),deletePet);
 
 export default router;

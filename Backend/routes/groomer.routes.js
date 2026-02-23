@@ -23,7 +23,7 @@ import {
 } from "../controllers/groomers.controller.js";
 import { allowRoles } from "../middlewares/allowedroles.js";
 const router = Router();
-router.use(allowRoles("GROOMER"));
+
 // Public Routes
 router.get("/", getAllGroomers);
 router.get("/:groomerId", getGroomerById);

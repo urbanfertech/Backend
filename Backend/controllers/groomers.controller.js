@@ -170,6 +170,8 @@ export const getGroomerDocuments = async (req, res) => {
 export const addServiceToGroomer = async (req, res) => {
   try {
     const userId = req.user.id;
+    if(!req.body)
+        return res.status(400).json({ message: "Service ID , customPrice and customDuration required" });
     const { serviceId, customPrice, customDuration } = req.body;
 
     if (!serviceId) {
@@ -308,6 +310,8 @@ export const getGroomerServices = async (req, res) => {
 export const setAvailability = async (req, res) => {
   try {
     const userId = req.user.id;
+    if(!req.body)
+        return res.status(400).json({ message: "Day of week, start time, end time and isAvailable required" });
     const { dayOfWeek, startTime, endTime, isAvailable } = req.body;
 
     if (dayOfWeek === undefined || !startTime || !endTime) {

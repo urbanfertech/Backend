@@ -4,8 +4,7 @@ import { setPassword, getProfile, updateProfile, deleteProfile } from "../contro
 import { allowRoles } from "../middlewares/allowedroles.js";
 const router = Router();
 
-router.use(allowRoles("USER"));
-router.post("/set-password", verifyToken,allowRoles("USER") ,setPassword);
+router.post("/set-password", verifyToken,setPassword);
 router.get("/get-profile", verifyToken, getProfile);
 router.put("/update-profile", verifyToken, updateProfile);
 router.delete("/delete-profile", verifyToken, deleteProfile);
