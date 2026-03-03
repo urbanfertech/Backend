@@ -20,13 +20,8 @@ app.use("/user/pets",petRoutes);
 app.use("/search", searchRoutes);
 app.use("/services", serviceRoutes);
 app.use("/booking",bookinRoutes);
-app.get("/test", async (req, res) => {
-  const user = await prisma.user.create({
-    data: { name: "Sohel" }
-  });
-  res.json(user);
-});
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+
+app.listen(process.env.PORT, () => {
+  console.log(`Server running on http://localhost:`+process.env.PORT);
 });
