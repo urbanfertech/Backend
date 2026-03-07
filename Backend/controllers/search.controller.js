@@ -1,4 +1,4 @@
-import prisma  from "../lib/prisma.js";
+import prisma  from "../config/prisma.js";
 export const searchGroomers = async (req, res) => {
   try {
     const {

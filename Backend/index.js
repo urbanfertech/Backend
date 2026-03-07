@@ -10,6 +10,7 @@ import petRoutes from "./routes/pet.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import bookinRoutes from "./routes/booking.route.js";
+import communityRoutes from "./routes/community.routes.js";
 const app = express();
 app.use(passport.initialize());
 app.use(express.json());
@@ -20,7 +21,7 @@ app.use("/user/pets",petRoutes);
 app.use("/search", searchRoutes);
 app.use("/services", serviceRoutes);
 app.use("/booking",bookinRoutes);
-
+app.use("/community",communityRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server running on http://localhost:`+process.env.PORT);

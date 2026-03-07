@@ -12,7 +12,18 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+enum NotificationType {
+  LIKE
+  COMMENT
+  REPLY
+  FOLLOW
+  ADMIN
+}
 
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
 enum Role {
   USER
   GROOMER
@@ -29,28 +40,41 @@ enum BookingStatus {
 
 model User {
   id            String   @id @default(uuid()) @db.Uuid
-  googleId      String?  @unique    
+  googleId      String?  @unique
   name          String
   email         String   @unique
   password      String?
-  role          Role   @default(USER)
+  role          Role     @default(USER)
+
   phone         String?
   city          String?
   pincode       String?
+
   latitude      Decimal? @db.Decimal(9, 6)
   longitude     Decimal? @db.Decimal(9, 6)
-  photo         String?             
+
+  photo         String?
   created_at    DateTime @default(now())
-  isDeleted     Boolean @default(false)
+  isDeleted     Boolean  @default(false)
+
   groomer       Groomer?
   bookings      Booking[]
   reviews       Review[]
   complaints    Complaint[]
-  pets        Pet[]
-  posts       Post[]
-  comments    Comment[]
-  postVotes     PostVote[] 
+  pets          Pet[]
 
+  posts         CommunityPost[]
+  comments      Comment[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+
+  followers     Follow[] @relation("UserFollowers")
+  following     Follow[] @relation("UserFollowing")
+
+  feedItems     Feed[]
+
+  notifications Notification[]
+  sentNotifications Notification[] @relation("NotificationSender")
   @@map("users")
 }
 
@@ -360,63 +384,82 @@ model Pet {
   @@map("pets")
 }
 
-model Post {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model CommunityPost {
+ id String @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  content   String?
+  createdAt DateTime @default(now())
+  imageUrl  String?
+  user      User @relation(fields: [userId], references: [id])
 
-  title       String
-  content     String
-  slug        String    @unique
-  image       String?   // optional cover image
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
 
-  isPublished Boolean   @default(true)
-
-  comments    Comment[]
-  votes       PostVote[]
-
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-
-  @@map("posts")
+  feeds Feed[]
+  notifications Notification[]
 }
+
 
 
 model Comment {
-  id              String     @id @default(uuid()) @db.Uuid
-  postId          String     @db.Uuid
-  post            Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  userId    String   @db.Uuid
+  comment   String
+  parentId  String?  @db.Uuid
+  createdAt DateTime @default(now())
 
-  userId          String     @db.Uuid
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      CommunityPost @relation(fields: [postId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
 
-  parentCommentId String?    @db.Uuid
-  parent          Comment?   @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
-  replies         Comment[]  @relation("CommentReplies")
+  replies   Comment[] @relation("CommentReplies")
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
 
-  content         String
-  isEdited        Boolean    @default(false)
+  notifications Notification[]
+}
+model Like {
+  id      String @id @default(uuid())
+  userId  String @db.Uuid
+  postId  String @db.Uuid
 
-  created_at      DateTime   @default(now())
-  updated_at      DateTime   @updatedAt
+  user User @relation(fields: [userId], references: [id])
+  post CommunityPost @relation(fields: [postId], references: [id])
 
-  @@map("comments")
+  @@unique([userId, postId])
 }
 
-model PostVote {
-  id        String   @id @default(uuid()) @db.Uuid
-  postId    String   @db.Uuid
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+model Bookmark {
+  id      String @id @default(uuid())
+  userId  String @db.Uuid
+  postId  String @db.Uuid
 
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+  post CommunityPost @relation(fields: [postId], references: [id])
 
-  voteType  String   // "upvote" or "downvote"
+  @@unique([userId, postId])
+}
 
-  created_at DateTime @default(now())
+model Follow {
+  id           String @id @default(uuid())
+ 
+  followerId   String @db.Uuid
+  followingId  String @db.Uuid
 
-  @@unique([postId, userId])
-  @@map("post_votes")
+  follower     User @relation("UserFollowing", fields: [followerId], references: [id])
+  following    User @relation("UserFollowers", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+model Feed {
+  id String @id @default(uuid()) @db.Uuid
+  userId    String  @db.Uuid
+  postId    String  @db.Uuid
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  post CommunityPost @relation(fields: [postId], references: [id])
 }
 
 model BookingService {
@@ -435,4 +478,30 @@ model BookingService {
   @@index([serviceId])
   @@index([bookingId])
   @@map("booking_services")
+}
+
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId      String?   @db.Uuid     // null for broadcast notifications
+  senderId    String?  @db.Uuid
+  postId      String?  @db.Uuid
+  commentId   String? @db.Uuid
+
+  type        NotificationType
+  title       String?
+  message     String
+
+  isBroadcast Boolean  @default(false)
+  isRead      Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  user        User? @relation(fields: [userId], references: [id])
+  sender      User? @relation("NotificationSender", fields: [senderId], references: [id])
+
+  post        CommunityPost? @relation(fields: [postId], references: [id])
+  comment     Comment? @relation(fields: [commentId], references: [id])
+
+  @@index([userId])
 }

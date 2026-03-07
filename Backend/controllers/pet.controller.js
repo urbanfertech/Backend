@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from "../config/prisma.js";
 export const AddPet = async (req, res) => {
   try {
     if (!req.body)

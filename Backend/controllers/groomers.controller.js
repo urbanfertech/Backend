@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from "../config/prisma.js";
 
 // Groomer Onboarding
 export const createGroomerProfile = async (req, res) => {

@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from "../config/prisma.js";
 import bcrypt from "bcrypt";
 import passport from "../lib/passport.js";
 import { generateToken } from "../lib/generatetoken.js";
