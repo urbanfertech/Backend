@@ -45,7 +45,12 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
       const newUser = await prisma.$transaction(async (tx) => {
-
+        if (role && !allowedRoles.includes(role)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid role provided"
+          });
+        }
         const createdUser = await tx.user.create({
           data: {
             name,
@@ -63,12 +68,7 @@ export const signup = async (req, res) => {
 
       const allowedRoles = ["USER", "GROOMER","ADMIN"];
 
-        if (role && !allowedRoles.includes(role)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid role provided"
-          });
-        }
+     
 
         if (role === "GROOMER") {
           await tx.groomer.create({
