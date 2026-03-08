@@ -1,4 +1,4 @@
-
+import http from "http";
 import express from "express";
 import "dotenv/config";
 import prismaPkg from "@prisma/client";
@@ -11,7 +11,12 @@ import searchRoutes from "./routes/search.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import bookinRoutes from "./routes/booking.route.js";
 import communityRoutes from "./routes/community.routes.js";
+import { initSocket } from "./config/socket.js";
 const app = express();
+const server = http.createServer(app);   // attach express to http server
+
+await initSocket(server); 
+
 app.use(passport.initialize());
 app.use(express.json());
 app.use("/accounts",authRoutes);

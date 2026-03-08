@@ -1,5 +1,7 @@
 import prisma from "../config/prisma.js";
 import { redisClient } from "../config/redis.js";
+import { getIO } from "../config/socket.js";
+
 
 export const   createPostService = async (userId, content, imageUrl) => {
 
@@ -83,9 +85,13 @@ export const getFeedService = async () => {
 
 
 export const likePostService = async (userId, postId) => {
-
+const io = getIO();
   await prisma.like.create({
     data: { userId, postId }
+  });
+io.to(postId).emit("like-updated", {
+    postId,
+    likesCount
   });
 
   await redisClient.del("community_feed");
@@ -94,7 +100,7 @@ export const likePostService = async (userId, postId) => {
 
 
 export const commentService = async (userId, postId, comment) => {
-
+const io = getIO();
   const newComment = await prisma.comment.create({
     data: {
       userId,
@@ -102,6 +108,7 @@ export const commentService = async (userId, postId, comment) => {
       comment
     }
   });
+  io.to(postId).emit("new-comment", newComment);
 
   await redisClient.del("community_feed");
 
@@ -110,11 +117,11 @@ export const commentService = async (userId, postId, comment) => {
 
 
 export const replyService = async (userId, commentId, comment) => {
-
+const io = getIO();
   const parent = await prisma.comment.findUnique({
     where: { id: commentId }
   });
-
+io.to(parent.postId).emit("new-reply", reply);
   return prisma.comment.create({
     data: {
       userId,
