@@ -11,7 +11,9 @@ import searchRoutes from "./routes/search.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import bookinRoutes from "./routes/booking.route.js";
 import communityRoutes from "./routes/community.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import { initSocket } from "./config/socket.js";
+
 const app = express();
 const server = http.createServer(app);   // attach express to http server
 
@@ -27,7 +29,7 @@ app.use("/search", searchRoutes);
 app.use("/services", serviceRoutes);
 app.use("/booking",bookinRoutes);
 app.use("/community",communityRoutes);
-
+app.use("/notifications", notificationRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server running on http://localhost:`+process.env.PORT);
 });

@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-
+import { createNotification } from "../services/notification.service.js";
 // Groomer Onboarding
 export const createGroomerProfile = async (req, res) => {
   try {

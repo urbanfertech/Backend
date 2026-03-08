@@ -23,6 +23,9 @@ export const initSocket = async (server) => {
     socket.on("join-post", (postId) => {
       socket.join(postId);
     });
+    socket.on("join-user", (userId) => {
+      socket.join(userId);
+    });
   });
 
   return io;

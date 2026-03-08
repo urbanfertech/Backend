@@ -1,7 +1,7 @@
 import prisma from "../config/prisma.js";
 import { redisClient } from "../config/redis.js";
 import { getIO } from "../config/socket.js";
-
+import { createNotification } from "./notification.service.js";
 
 export const   createPostService = async (userId, content, imageUrl) => {
 
@@ -89,6 +89,13 @@ const io = getIO();
   await prisma.like.create({
     data: { userId, postId }
   });
+  await createNotification({
+  userId: postOwnerId,
+  senderId: userId,
+  type: "LIKE",
+  postId,
+  message: "liked your post"
+});
 io.to(postId).emit("like-updated", {
     postId,
     likesCount
@@ -108,6 +115,18 @@ const io = getIO();
       comment
     }
   });
+  const postOwnerId = await prisma.communityPost.findUnique({
+    where: { id: postId },
+    select: { userId: true }
+  })
+  console.log(postOwnerId);
+  await createNotification({
+  userId: postOwnerId.userId,
+  senderId: userId,
+  type: "COMMENT",
+  postId,
+  message: "commented on your post"
+});
   io.to(postId).emit("new-comment", newComment);
 
   await redisClient.del("community_feed");
@@ -121,6 +140,13 @@ const io = getIO();
   const parent = await prisma.comment.findUnique({
     where: { id: commentId }
   });
+  await createNotification({
+  userId: parentCommentUserId,
+  senderId: userId,
+  type: "REPLY",
+  commentId,
+  message: "replied to your comment"
+});
 io.to(parent.postId).emit("new-reply", reply);
   return prisma.comment.create({
     data: {
@@ -141,7 +167,12 @@ export const bookmarkService = async (userId, postId) => {
 };
 
 export const followService = async (userId, targetId) => {
-
+await createNotification({
+  userId: targetUserId,
+  senderId: userId,
+  type: "FOLLOW",
+  message: "started following you"
+});
   return prisma.follow.create({
     data: {
       followerId: userId,
