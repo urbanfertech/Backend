@@ -43,7 +43,7 @@ export const signup = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
+      const allowedRoles = ["USER", "GROOMER","ADMIN"];
       const newUser = await prisma.$transaction(async (tx) => {
         if (role && !allowedRoles.includes(role)) {
           return res.status(400).json({
@@ -66,7 +66,7 @@ export const signup = async (req, res) => {
           }
         });
 
-      const allowedRoles = ["USER", "GROOMER","ADMIN"];
+      
 
      
 

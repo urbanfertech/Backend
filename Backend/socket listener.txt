@@ -1,0 +1,24 @@
+
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5000");
+
+socket.emit("join-post", postId);
+
+//new comment
+socket.on("new-comment", (comment) => {
+  addCommentToUI(comment);
+});
+
+
+
+//like post
+socket.on("like-updated", (data) => {
+  updateLikeCount(data.postId, data.likesCount);
+});
+//reply to comment
+socket.on("new-reply", (reply) => {
+  addReplyToUI(reply);
+});
+//notification when log in 
+socket.emit("join-user", userId);

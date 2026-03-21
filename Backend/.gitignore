@@ -3,4 +3,3 @@
 .env
 /generated/prisma
 node_modules
-pass.txt
